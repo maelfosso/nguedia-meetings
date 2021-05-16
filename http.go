@@ -19,6 +19,7 @@ const NB_WORKERS = 4
 type MeetingStore interface {
 	CheckAvailability(name string) (bool, error)
 	CreateMeeting(meeting *Meeting) error
+	isMeetingExists(meeting string) (bool, error)
 	AddMember(meeting string, member *Member) error
 }
 
@@ -113,6 +114,14 @@ func (h *HttpServer) UploadMembersHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if exists, err := h.store.isMeetingExists(meeting); err != nil {
+		h.JSON(w, http.StatusInternalServerError, fmt.Errorf("impossible to check if the meeting exists"))
+		return
+	} else if !exists {
+		h.JSON(w, http.StatusBadRequest, fmt.Errorf("meeting does not exists"))
+		return
+	}
+
 	lenJobs := len(members)
 	jobs := make(chan Member, lenJobs)
 
@@ -140,7 +149,9 @@ func (h *HttpServer) addMeetingMembersWorker(ctx context.Context, meeting string
 		case <-ctx.Done():
 			return
 		default:
+			// h.store.AddMember(meeting, &member)
 			if err := h.store.AddMember(meeting, &member); err != nil {
+
 				// error if a member in that meeting
 				// has an email or phone number or Name already used
 
@@ -148,7 +159,7 @@ func (h *HttpServer) addMeetingMembersWorker(ctx context.Context, meeting string
 				// if the member has been saved or not
 				// it's important for the client
 			}
+			wg.Done()
 		}
-		wg.Done()
 	}
 }
