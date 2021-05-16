@@ -12,7 +12,7 @@ import (
 )
 
 type StubMeetingStore struct {
-	meetings []Meeting
+	meetings map[Meeting][]Member // []Meeting
 }
 
 func (s *StubMeetingStore) CheckAvailability(name string) (bool, error) {
@@ -29,6 +29,10 @@ func (s *StubMeetingStore) CreateMeeting(meeting *Meeting) error {
 	s.meetings = append(s.meetings, *meeting)
 
 	return nil
+}
+
+func (s *StubMeetingStore) AddMember(meeting string, member *Member) error {
+
 }
 
 func marshalling(data interface{}) string {

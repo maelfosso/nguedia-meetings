@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gorilla/handlers"
@@ -12,9 +14,12 @@ import (
 	"github.com/rs/cors"
 )
 
+const NB_WORKERS = 4
+
 type MeetingStore interface {
 	CheckAvailability(name string) (bool, error)
 	CreateMeeting(meeting *Meeting) error
+	AddMember(meeting string, member *Member) error
 }
 
 type HttpServer struct {
@@ -63,6 +68,13 @@ type Meeting struct {
 	Date        time.Time
 }
 
+type Member struct {
+	Name           string
+	PhoneNumber    string
+	Email          string
+	MembershipDate time.Time
+}
+
 func (h *HttpServer) CreateMeetingHandler(w http.ResponseWriter, r *http.Request) {
 	var meeting Meeting
 
@@ -91,5 +103,52 @@ func (h *HttpServer) CreateMeetingHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (h *HttpServer) UploadMembersHandler(w http.ResponseWriter, r *http.Request) {
+	var members []Member
 
+	vars := mux.Vars(r)
+	meeting := vars["id"]
+
+	if err := json.NewDecoder(r.Body).Decode(&members); err != nil {
+		h.JSON(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	lenJobs := len(members)
+	jobs := make(chan Member, lenJobs)
+
+	wg := sync.WaitGroup{}
+	wg.Add(lenJobs)
+
+	for w := 1; w <= NB_WORKERS; w++ {
+		go h.addMeetingMembersWorker(r.Context(), meeting, jobs, &wg)
+	}
+
+	for _, member := range members {
+		jobs <- member
+	}
+
+	close(jobs)
+
+	wg.Wait()
+
+	h.JSON(w, http.StatusCreated, members)
+}
+
+func (h *HttpServer) addMeetingMembersWorker(ctx context.Context, meeting string, members chan Member, wg *sync.WaitGroup) {
+	for member := range members {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			if err := h.store.AddMember(meeting, &member); err != nil {
+				// error if a member in that meeting
+				// has an email or phone number or Name already used
+
+				// the error is written in the channel so that we can know
+				// if the member has been saved or not
+				// it's important for the client
+			}
+		}
+		wg.Done()
+	}
 }
