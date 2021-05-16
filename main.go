@@ -6,7 +6,8 @@ import (
 )
 
 func main() {
+	store := NewMongoStore()
 	// Need to add the store
-	server := NewHttpServer(nil)
+	server := NewHttpServer(store)
 	log.Fatal(http.ListenAndServe(":5000", server))
 }

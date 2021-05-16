@@ -43,7 +43,7 @@ func NewHttpServer(store MeetingStore) http.Handler {
 	})
 
 	r.HandleFunc("/api/meetings", h.CreateMeetingHandler).Methods("POST")
-	// r.HandleFunc("/api/meetings/{id}/members", UploadMembersHandler)
+	r.HandleFunc("/api/meetings/{id}/members", h.UploadMembersHandler).Methods("POST")
 	// r.HandleFunc("/api/meetings/{id}/members/invite", InviteMemberHandler)
 	// r.HandleFunc("/api/meetings/{id}/members/join", JoinMeetingHandler)
 
@@ -88,4 +88,8 @@ func (h *HttpServer) CreateMeetingHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	h.JSON(w, http.StatusCreated, meeting)
+}
+
+func (h *HttpServer) UploadMembersHandler(w http.ResponseWriter, r *http.Request) {
+
 }
