@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
-	log.Fatal(http.ListenAndServe(":5000", nil))
+	server := NewHttpServer(nil)
+	log.Fatal(http.ListenAndServe(":5000", server))
 }
