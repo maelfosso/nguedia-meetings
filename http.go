@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 const NB_WORKERS = 4
@@ -19,8 +20,8 @@ const NB_WORKERS = 4
 type MeetingStore interface {
 	CheckAvailability(name string) (bool, error)
 	CreateMeeting(meeting *Meeting) error
-	isMeetingExists(meeting string) (bool, error)
-	AddMember(meeting string, member *Member) error
+	isMeetingExists(meetingID string) (bool, error)
+	AddMember(meetingID string, member *Member) error
 }
 
 type HttpServer struct {
@@ -64,12 +65,14 @@ func NewHttpServer(store MeetingStore) http.Handler {
 }
 
 type Meeting struct {
+	ID          primitive.ObjectID
 	Name        string
 	Description string
 	Date        time.Time
 }
 
 type Member struct {
+	ID             primitive.ObjectID
 	Name           string
 	PhoneNumber    string
 	Email          string

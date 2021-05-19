@@ -6,7 +6,10 @@ import (
 )
 
 func main() {
-	store := NewMongoStore()
+	OpenDB()
+	defer CloseDB()
+
+	store := NewMongoStore(Database())
 	// Need to add the store
 	server := NewHttpServer(store)
 	log.Fatal(http.ListenAndServe(":5000", server))
